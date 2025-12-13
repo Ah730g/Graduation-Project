@@ -1,0 +1,48 @@
+import React, { useEffect, useState } from 'react';
+import Filter from '../components/Filter';
+import EstateCard from '../components/EstateCard';
+import Map from '../components/Map';
+import AxiosClient from '../AxiosClient';
+import { usePostContext } from '../contexts/PostContext';
+
+function ListPage() {
+  const [properties, setProperties] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const { posts } = usePostContext();
+
+  useEffect(() => {
+    AxiosClient.get('/property').then((response) => {
+      setProperties(response.data);
+      setLoading(false);
+      console.log(posts);
+    });
+  }, []);
+  return (
+    <div
+      className="px-5 mx-auto max-w-[1366px] max-md:max-w-[640px] max-lg:max-w-[768px] max-xl:max-w-[1280px]
+     lg:flex lg:justify-between h-[calc(100vh-100px)]"
+    >
+      {loading ? (
+        <div className="text-3xl text-green-600 font-bold absolute right-1/2 top-1/2">
+          Loading...
+        </div>
+      ) : (
+        <>
+          <div className="content lg:w-3/5 lg:pr-24 flex flex-col gap-12 overflow-y-scroll mb-3">
+            <Filter properties={properties} loading={setLoading} />
+            <div className="flex flex-col gap-5 mt-5">
+              {posts.map((es) => {
+                return <EstateCard key={es.id} estate={es} />;
+              })}
+            </div>
+          </div>
+          <div className="map lg:flex-1 md:bg-[#fcf5f3]">
+            <Map data={posts} />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default ListPage;

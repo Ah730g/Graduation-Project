@@ -1,0 +1,91 @@
+import React, { useRef, useState } from 'react';
+import { Link, Navigate } from 'react-router-dom';
+import AxiosClient from '../AxiosClient';
+import { useUserContext } from '../contexts/UserContext';
+
+function Signup() {
+  const { setUser, setToken, token } = useUserContext();
+  const [errors, setErrors] = useState(null);
+  const refName = useRef();
+  const refEmail = useRef();
+  const refPassword = useRef();
+  const refPasswordConf = useRef();
+  const [loading, setLoading] = useState(false);
+
+  const onSubmit = (ev) => {
+    ev.preventDefault();
+    const payload = {
+      name: refName.current.value,
+      email: refEmail.current.value,
+      password: refPassword.current.value,
+      password_confirmation: refPasswordConf.current.value,
+    };
+    setLoading(true);
+    setErrors(null);
+    AxiosClient.post('/signup', payload)
+      .then(({ data }) => {
+        setUser(data.userDTO);
+        setToken(data.token);
+        setLoading(false);
+      })
+      .catch((error) => {
+        const response = error.response;
+        setLoading(false);
+        if (response.status == 422) {
+          setErrors(response.data.errors);
+        }
+      });
+  };
+
+  if (token) return <Navigate to="/" />;
+
+  return (
+    <div className="flex justify-center items-center flex-1">
+      <form action="" className="w-80 flex flex-col gap-4" onSubmit={onSubmit}>
+        <h3 className="font-bold text-3xl text-center">Create an account</h3>
+        {errors && (
+          <div className="bg-red-500 text-white p-3 rounded-md">
+            {Object.keys(errors).map((e) => {
+              return <p>{errors[e][0]}</p>;
+            })}
+          </div>
+        )}
+        <input
+          type="text"
+          placeholder="Full Name"
+          className="w-full px-3 py-5 border outline-none rounded-md"
+          ref={refName}
+        />
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full px-3 py-5 border outline-none rounded-md"
+          ref={refEmail}
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full border outline-none rounded-md px-3 py-5"
+          ref={refPassword}
+        />
+        <input
+          type="password"
+          placeholder="Password Confirmation"
+          className="w-full border outline-none rounded-md px-3 py-5"
+          ref={refPasswordConf}
+        />
+        <button
+          className="w-full bg-green-600 text-white px-3 py-5 rounded-md disabled:bg-[#444] disabled:cursor-none"
+          disabled={loading}
+        >
+          Sign up
+        </button>
+        <Link className="underline text-sm text-[#444] font-bold" to="/login">
+          Already have an account
+        </Link>
+      </form>
+    </div>
+  );
+}
+
+export default Signup;
