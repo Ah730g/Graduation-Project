@@ -5,16 +5,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class SavedPost extends Model
+class Review extends Model
 {
-    protected $guarded = [];
-    
-    public function user() : BelongsTo
+    protected $fillable = [
+        'user_id',
+        'post_id',
+        'rating',
+        'comment',
+        'status',
+    ];
+
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
-    
-    public function post() : BelongsTo
+
+    public function post(): BelongsTo
     {
         return $this->belongsTo(Post::class);
     }

@@ -24,6 +24,8 @@ class User extends Authenticatable
         'email',
         'password',
         'avatar',
+        'role',
+        'status',
     ];
 
     /**
@@ -55,5 +57,17 @@ class User extends Authenticatable
     public function savedPost() : HasMany
     {
         return $this->hasMany(SavedPost::class);
+    }
+    public function rentalRequests() : HasMany
+    {
+        return $this->hasMany(RentalRequest::class);
+    }
+    public function contracts() : HasMany
+    {
+        return $this->hasMany(Contract::class);
+    }
+    public function reviews() : HasMany
+    {
+        return $this->hasMany(Review::class);
     }
 }

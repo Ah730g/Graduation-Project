@@ -9,6 +9,7 @@ const userContext = createContext({
   setMessage: () => {},
   messageStatus: null,
   setMessageStatus: () => {},
+  isAdmin: () => false,
 });
 
 export default function UserContextProvider({ children }) {
@@ -33,6 +34,9 @@ export default function UserContextProvider({ children }) {
 
     _setToken(token);
   };
+  const isAdmin = () => {
+    return user && user.role === 'admin';
+  };
   const values = {
     user,
     setUser,
@@ -42,6 +46,7 @@ export default function UserContextProvider({ children }) {
     setMessage,
     messageStatus,
     setMessageStatus,
+    isAdmin,
   };
   return <userContext.Provider value={values}>{children}</userContext.Provider>;
 }

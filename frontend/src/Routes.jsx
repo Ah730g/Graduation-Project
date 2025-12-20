@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { Layout, AuthLayout } from './components/Layout';
+import AdminLayout from './components/AdminLayout';
 import Home from './pages/Home';
 import About from './pages/About';
 import ListPage from './pages/ListPage';
@@ -11,6 +12,14 @@ import NotFound from './pages/NotFound';
 import Signup from './pages/Signup';
 import UpdateUser from './pages/UpdateUser';
 import AddPost from './pages/AddPost';
+import AdminDashboard from './pages/AdminDashboard';
+import UserManagement from './pages/UserManagement';
+import ApartmentManagement from './pages/ApartmentManagement';
+import RentalRequestsManagement from './pages/RentalRequestsManagement';
+import ContractManagement from './pages/ContractManagement';
+import ReviewsManagement from './pages/ReviewsManagement';
+import AdminNotifications from './pages/AdminNotifications';
+import AdminSettings from './pages/AdminSettings';
 import EstateInfoLoader from './Lib/Loaders';
 
 const route = createBrowserRouter([
@@ -70,6 +79,44 @@ const route = createBrowserRouter([
       {
         path: '/post/add',
         element: <AddPost />,
+      },
+    ],
+  },
+  {
+    path: '/admin',
+    element: <AdminLayout />,
+    children: [
+      {
+        path: 'dashboard',
+        element: <AdminDashboard />,
+      },
+      {
+        path: 'users',
+        element: <UserManagement />,
+      },
+      {
+        path: 'apartments',
+        element: <ApartmentManagement />,
+      },
+      {
+        path: 'rental-requests',
+        element: <RentalRequestsManagement />,
+      },
+      {
+        path: 'contracts',
+        element: <ContractManagement />,
+      },
+      {
+        path: 'reviews',
+        element: <ReviewsManagement />,
+      },
+      {
+        path: 'notifications',
+        element: <AdminNotifications />,
+      },
+      {
+        path: 'settings',
+        element: <AdminSettings />,
       },
     ],
   },

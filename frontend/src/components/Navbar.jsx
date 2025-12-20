@@ -1,13 +1,48 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useUserContext } from '../contexts/UserContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import AxiosClient from '../AxiosClient';
 
 function Navbar() {
   const [sidebar, setSidebar] = useState(false);
-  const { user } = useUserContext();
+  const [profileDropdown, setProfileDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+  const { user, isAdmin, setUser, setToken } = useUserContext();
   const { language, setLanguage, t } = useLanguage();
+  const navigate = useNavigate();
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setProfileDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    AxiosClient.post('/logout')
+      .then(() => {
+        setUser(null);
+        setToken(null);
+        navigate('/');
+        setProfileDropdown(false);
+      })
+      .catch((error) => {
+        console.error('Error logging out:', error);
+        // Still clear local storage even if API call fails
+        setUser(null);
+        setToken(null);
+        navigate('/');
+        setProfileDropdown(false);
+      });
+  };
 
   // useEffect(() => {
   //   AxiosClient.get('/user').then(({ data }) => {
@@ -17,8 +52,8 @@ function Navbar() {
   // }, []);
 
   return (
-    <div className="px-5 mx-auto max-w-[1366px] max-md:max-w-[640px] max-lg:max-w-[768px] max-xl:max-w-[1280px] overflow-hidden">
-      <nav className="flex justify-between items-center h-[100px]">
+    <div className="px-5 mx-auto max-w-[1366px] max-md:max-w-[640px] max-lg:max-w-[768px] max-xl:max-w-[1280px]">
+      <nav className="flex justify-between items-center h-[100px] relative">
         <div className="left flex-1 flex items-center gap-12 max-md:gap-10">
           <Link
             className="logo flex items-center font-bold text-xl max-lg:text-lg gap-2.5 hover:scale-105 transition duration-300 eas"
@@ -53,32 +88,60 @@ function Navbar() {
           >
             {t('navbar.agents')}
           </Link>
+          {user && isAdmin() && (
+            <Link
+              to="/admin/dashboard"
+              className="bg-yellow-300 px-4 py-2 hover:scale-105 transition duration-300 ease rounded-md max-md:hidden font-bold"
+            >
+              Admin
+            </Link>
+          )}
         </div>
         <div
-          className={`right md:w-2/5 flex items-center md:justify-end lg:bg-[#fcf5f3] h-full 
+          className={`right md:w-2/5 flex items-center md:justify-end lg:bg-[#fcf5f3] h-full relative
           ${user ? '' : 'gap-12'}`}
         >
           {user ? (
-            <div className="flex justify-between items-center gap-4">
-              <img
-                src={user.avatar || '/avatar.png'}
-                alt=""
-                className="w-10 h-10 rounded-full object-cover"
-              />
-              <span className="font-bold  max-md:hidden">{user.name}</span>
-              <Link
-                className="bg-yellow-300 px-6 py-3 rounded-md font-bold lg:mr-4 
-              hover:scale-105 transition duration-300 ease relative max-md:hidden"
-                to="/user/profile"
+            <div className="relative z-[9999]" ref={dropdownRef}>
+              <button
+                onClick={() => setProfileDropdown(!profileDropdown)}
+                className="flex items-center gap-3 hover:scale-105 transition duration-300 ease"
               >
-                <div
-                  className="notification absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-700 text-white
-                flex justify-center items-center text-sm"
+                <img
+                  src={user.avatar || '/avatar.png'}
+                  alt=""
+                  className="w-10 h-10 rounded-full object-cover border-2 border-yellow-300"
+                />
+                <span className="font-bold max-md:hidden">{user.name}</span>
+                <svg
+                  className={`w-4 h-4 transition-transform duration-300 ${profileDropdown ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  3
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {profileDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-xl border border-gray-200 z-[10000]">
+                  <div className="py-1">
+                    <Link
+                      to="/user/profile"
+                      onClick={() => setProfileDropdown(false)}
+                      className="block px-4 py-2 text-sm text-[#444] hover:bg-yellow-300 transition duration-300 ease"
+                    >
+                      {t('navbar.profile')}
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition duration-300 ease"
+                    >
+                      {t('navbar.logout')}
+                    </button>
+                  </div>
                 </div>
-                {t('navbar.profile')}
-              </Link>
+              )}
             </div>
           ) : (
             <>
@@ -102,7 +165,7 @@ function Navbar() {
           {/* Language Toggle Button */}
           <button
             onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-300 ease max-md:mr-2"
+            className="bg-yellow-300 hover:scale-105 px-4 py-2 rounded-md font-bold transition duration-300 ease text-[#444] max-md:mr-2"
             title={language === 'en' ? 'Switch to Arabic' : 'التبديل إلى الإنجليزية'}
           >
             {language === 'en' ? 'عربي' : 'English'}

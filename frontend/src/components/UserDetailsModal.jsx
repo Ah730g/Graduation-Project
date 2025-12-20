@@ -1,0 +1,425 @@
+import { useState, useEffect } from 'react';
+import AxiosClient from '../AxiosClient';
+import { useUserContext } from '../contexts/UserContext';
+import { useLanguage } from '../contexts/LanguageContext';
+
+function UserDetailsModal({ userId, isOpen, onClose, onUpdate }) {
+  const [user, setUser] = useState(null);
+  const [activities, setActivities] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [activeTab, setActiveTab] = useState('details');
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    role: 'user',
+    status: 'active',
+    avatar: '',
+    password: '',
+    password_confirmation: '',
+  });
+  const { setMessage } = useUserContext();
+  const { t, translateRole, translateStatus } = useLanguage();
+
+  useEffect(() => {
+    if (isOpen && userId) {
+      fetchUserDetails();
+      setActiveTab('details');
+    }
+  }, [isOpen, userId]);
+
+  const fetchUserDetails = () => {
+    setLoading(true);
+    AxiosClient.get(`/admin/users/${userId}`)
+      .then((response) => {
+        const userData = response.data.user;
+        const activitiesData = response.data.activities;
+        const statsData = response.data.stats;
+        
+        setUser(userData);
+        setActivities(activitiesData);
+        setStats(statsData);
+        setFormData({
+          name: userData.name || '',
+          email: userData.email || '',
+          role: userData.role || 'user',
+          status: userData.status || 'active',
+          avatar: userData.avatar || '',
+          password: '',
+          password_confirmation: '',
+        });
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error('Error fetching user details:', error);
+        setMessage(t('admin.errorLoadingUserDetails'), 'error');
+        setLoading(false);
+      });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const updateData = {
+      name: formData.name,
+      email: formData.email,
+      role: formData.role,
+      status: formData.status,
+      avatar: formData.avatar,
+    };
+
+    if (formData.password) {
+      if (formData.password !== formData.password_confirmation) {
+        setMessage(t('admin.passwordsDoNotMatch'), 'error');
+        setLoading(false);
+        return;
+      }
+      updateData.password = formData.password;
+    }
+
+    AxiosClient.put(`/admin/users/${userId}`, updateData)
+      .then(() => {
+        setMessage(t('admin.update') + ' ' + t('common.success'));
+        onUpdate();
+        fetchUserDetails();
+      })
+      .catch((error) => {
+        console.error('Error updating user:', error);
+        setMessage(t('admin.errorUpdatingUser'), 'error');
+        setLoading(false);
+      });
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-md p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-[#444]">{t('admin.userDetails')}</h2>
+          <button
+            onClick={onClose}
+            className="text-2xl text-[#888] hover:text-[#444] transition duration-300 ease"
+          >
+            ×
+          </button>
+        </div>
+
+        {loading && !user ? (
+          <div className="text-center py-8">
+            <p className="text-[#888]">{t('common.loading')}</p>
+          </div>
+        ) : (
+          <>
+            {/* Tabs */}
+            <div className="flex gap-2 mb-6 border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab('details')}
+                className={`px-4 py-2 font-semibold transition duration-300 ease ${
+                  activeTab === 'details'
+                    ? 'bg-yellow-300 text-[#444] border-b-2 border-yellow-300'
+                    : 'text-[#888] hover:text-[#444]'
+                }`}
+              >
+                {t('admin.details')}
+              </button>
+              <button
+                onClick={() => setActiveTab('activities')}
+                className={`px-4 py-2 font-semibold transition duration-300 ease ${
+                  activeTab === 'activities'
+                    ? 'bg-yellow-300 text-[#444] border-b-2 border-yellow-300'
+                    : 'text-[#888] hover:text-[#444]'
+                }`}
+              >
+                {t('admin.activities')} {stats && `(${stats.total_posts + stats.total_contracts + stats.total_rental_requests + stats.total_saved_posts + stats.total_reviews})`}
+              </button>
+            </div>
+
+            {/* Details Tab */}
+            {activeTab === 'details' && (
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-[#444] mb-2">
+                    {t('admin.name')}
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-[#444] mb-2">
+                    {t('admin.email')}
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-[#444] mb-2">
+                    {t('admin.role')}
+                  </label>
+                  <select
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                  >
+                    <option value="user">{translateRole('user')}</option>
+                    <option value="admin">{translateRole('admin')}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-[#444] mb-2">
+                    {t('admin.status')}
+                  </label>
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                  >
+                    <option value="active">{translateStatus('active')}</option>
+                    <option value="disabled">{translateStatus('disabled')}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-[#444] mb-2">
+                    {t('admin.avatar')}
+                  </label>
+                  <input
+                    type="text"
+                    name="avatar"
+                    value={formData.avatar}
+                    onChange={handleChange}
+                    placeholder="Avatar URL"
+                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-[#444] mb-2">
+                    {t('admin.password')} ({t('admin.leaveBlank')})
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                  />
+                </div>
+
+                {formData.password && (
+                  <div>
+                    <label className="block text-sm font-semibold text-[#444] mb-2">
+                      {t('admin.confirmPassword')}
+                    </label>
+                    <input
+                      type="password"
+                      name="password_confirmation"
+                      value={formData.password_confirmation}
+                      onChange={handleChange}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                    />
+                  </div>
+                )}
+
+                <div className="flex gap-3 justify-end mt-4">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="bg-gray-200 px-6 py-3 rounded-md font-bold hover:scale-105 transition duration-300 ease"
+                  >
+                    {t('admin.cancel')}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-yellow-300 px-6 py-3 rounded-md font-bold hover:scale-105 transition duration-300 ease disabled:opacity-50"
+                  >
+                    {loading ? t('common.loading') : t('admin.update')}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Activities Tab */}
+            {activeTab === 'activities' && activities && (
+              <div className="space-y-6">
+                {/* Stats Summary */}
+                {stats && (
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                    <div className="bg-gray-200 p-4 rounded-md text-center">
+                      <div className="text-2xl font-bold text-[#444]">{stats.total_posts}</div>
+                      <div className="text-sm text-[#888]">{t('admin.posts')}</div>
+                    </div>
+                    <div className="bg-gray-200 p-4 rounded-md text-center">
+                      <div className="text-2xl font-bold text-[#444]">{stats.total_contracts}</div>
+                      <div className="text-sm text-[#888]">{t('admin.contracts')}</div>
+                    </div>
+                    <div className="bg-gray-200 p-4 rounded-md text-center">
+                      <div className="text-2xl font-bold text-[#444]">{stats.total_rental_requests}</div>
+                      <div className="text-sm text-[#888]">{t('admin.rentalRequests')}</div>
+                    </div>
+                    <div className="bg-gray-200 p-4 rounded-md text-center">
+                      <div className="text-2xl font-bold text-[#444]">{stats.total_saved_posts}</div>
+                      <div className="text-sm text-[#888]">{t('admin.savedPosts')}</div>
+                    </div>
+                    <div className="bg-gray-200 p-4 rounded-md text-center">
+                      <div className="text-2xl font-bold text-[#444]">{stats.total_reviews}</div>
+                      <div className="text-sm text-[#888]">{t('admin.reviews')}</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Posts */}
+                <div>
+                  <h3 className="text-lg font-bold text-[#444] mb-3">{t('admin.posts')} ({activities.posts?.length || 0})</h3>
+                  <div className="bg-gray-100 rounded-md p-4 max-h-40 overflow-y-auto">
+                    {activities.posts && activities.posts.length > 0 ? (
+                      <div className="space-y-2">
+                        {activities.posts.map((post) => (
+                          <div key={post.id} className="bg-white p-3 rounded-md">
+                            <div className="font-semibold text-[#444]">{post.Title}</div>
+                            <div className="text-sm text-[#888]">{post.Address}</div>
+                            <div className="text-xs text-[#888] mt-1">
+                              {t('admin.status')}: {translateStatus(post.status)} | {formatDate(post.created_at)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[#888]">{t('admin.noData')}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Contracts */}
+                <div>
+                  <h3 className="text-lg font-bold text-[#444] mb-3">{t('admin.contracts')} ({activities.contracts?.length || 0})</h3>
+                  <div className="bg-gray-100 rounded-md p-4 max-h-40 overflow-y-auto">
+                    {activities.contracts && activities.contracts.length > 0 ? (
+                      <div className="space-y-2">
+                        {activities.contracts.map((contract) => (
+                          <div key={contract.id} className="bg-white p-3 rounded-md">
+                            <div className="font-semibold text-[#444]">{contract.post?.Title || '-'}</div>
+                            <div className="text-sm text-[#888]">
+                              {formatDate(contract.start_date)} - {formatDate(contract.end_date)}
+                            </div>
+                            <div className="text-xs text-[#888] mt-1">
+                              {t('admin.status')}: {translateStatus(contract.status)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[#888]">{t('admin.noData')}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Rental Requests */}
+                <div>
+                  <h3 className="text-lg font-bold text-[#444] mb-3">{t('admin.rentalRequests')} ({activities.rental_requests?.length || 0})</h3>
+                  <div className="bg-gray-100 rounded-md p-4 max-h-40 overflow-y-auto">
+                    {activities.rental_requests && activities.rental_requests.length > 0 ? (
+                      <div className="space-y-2">
+                        {activities.rental_requests.map((request) => (
+                          <div key={request.id} className="bg-white p-3 rounded-md">
+                            <div className="font-semibold text-[#444]">{request.post?.Title || '-'}</div>
+                            <div className="text-sm text-[#888]">{request.post?.Address || '-'}</div>
+                            <div className="text-xs text-[#888] mt-1">
+                              {t('admin.status')}: {translateStatus(request.status)} | {formatDate(request.requested_at)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[#888]">{t('admin.noData')}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Saved Posts */}
+                <div>
+                  <h3 className="text-lg font-bold text-[#444] mb-3">{t('admin.savedPosts')} ({activities.saved_posts?.length || 0})</h3>
+                  <div className="bg-gray-100 rounded-md p-4 max-h-40 overflow-y-auto">
+                    {activities.saved_posts && activities.saved_posts.length > 0 ? (
+                      <div className="space-y-2">
+                        {activities.saved_posts.map((saved) => (
+                          <div key={saved.id} className="bg-white p-3 rounded-md">
+                            <div className="font-semibold text-[#444]">{saved.post?.Title || '-'}</div>
+                            <div className="text-sm text-[#888]">{saved.post?.Address || '-'}</div>
+                            <div className="text-xs text-[#888] mt-1">{formatDate(saved.created_at)}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[#888]">{t('admin.noData')}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Reviews */}
+                <div>
+                  <h3 className="text-lg font-bold text-[#444] mb-3">{t('admin.reviews')} ({activities.reviews?.length || 0})</h3>
+                  <div className="bg-gray-100 rounded-md p-4 max-h-40 overflow-y-auto">
+                    {activities.reviews && activities.reviews.length > 0 ? (
+                      <div className="space-y-2">
+                        {activities.reviews.map((review) => (
+                          <div key={review.id} className="bg-white p-3 rounded-md">
+                            <div className="font-semibold text-[#444]">{review.post?.Title || '-'}</div>
+                            <div className="text-sm text-[#888]">
+                              {t('admin.rating')}: {'⭐'.repeat(review.rating)}
+                            </div>
+                            {review.comment && (
+                              <div className="text-sm text-[#444] mt-1">{review.comment}</div>
+                            )}
+                            <div className="text-xs text-[#888] mt-1">
+                              {t('admin.status')}: {translateStatus(review.status)} | {formatDate(review.created_at)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[#888]">{t('admin.noData')}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default UserDetailsModal;

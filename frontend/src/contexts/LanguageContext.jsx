@@ -5,6 +5,8 @@ const LanguageContext = createContext({
   language: 'en',
   setLanguage: () => {},
   t: (key) => key,
+  translateRole: (role) => role,
+  translateStatus: (status) => status,
 });
 
 export default function LanguageProvider({ children }) {
@@ -38,10 +40,22 @@ export default function LanguageProvider({ children }) {
     return value || key;
   };
 
+  // Helper function to translate role
+  const translateRole = (role) => {
+    return t(`admin.roles.${role}`) || role;
+  };
+
+  // Helper function to translate status
+  const translateStatus = (status) => {
+    return t(`admin.statuses.${status}`) || status;
+  };
+
   const values = {
     language,
     setLanguage,
     t,
+    translateRole,
+    translateStatus,
   };
 
   return (
