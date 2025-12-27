@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Disable foreign key checks for MySQL
+        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        
         // SQLite doesn't support ALTER COLUMN for enum, so we need to recreate the table
         // Step 1: Create new table with updated enum
         Schema::create('users_new', function (Blueprint $table) {
@@ -55,6 +58,9 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->unique('email');
         });
+        
+        // Re-enable foreign key checks
+        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
 
     /**
@@ -62,6 +68,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        // Disable foreign key checks for MySQL
+        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        
         // Revert to old roles
         Schema::create('users_old', function (Blueprint $table) {
             $table->id();
@@ -102,5 +111,8 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->unique('email');
         });
+        
+        // Re-enable foreign key checks
+        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
 };

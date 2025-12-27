@@ -23,19 +23,19 @@ class postController extends Controller
             $query->where("City",$request->location);
 
         if($request->has("min") && !empty($request->min))
-            $query->where("price",">=",$request->min);
+            $query->where("Price",">=",$request->min);
 
         if($request->has("max") && !empty($request->max))
-            $query->where("price","<=",$request->max);
+            $query->where("Price","<=",$request->max);
 
         if($request->has("type") && !empty($request->type))
-            $query->where("type","=",$request->type);
+            $query->where("Type","=",$request->type);
 
         if($request->has("property") && !empty($request->property))
             $query->where("porperty_id",$request->property);
 
         if($request->has("bedroom") && !empty($request->bedroom))
-            $query->where("bedrooms","=",$request->bedroom);
+            $query->where("Bedrooms","=",$request->bedroom);
 
         $posts = $query->get();
         return PostResource::collection($posts);
@@ -46,38 +46,49 @@ class postController extends Controller
      */
     public function store(StorepostRequest $request)
     {
+        // Check identity verification status - CRITICAL SECURITY CHECK
+        $user = $request->user();
+        if ($user->identity_status !== 'approved') {
+            return response()->json([
+                'message' => 'Identity verification required. Please submit your identity documents for verification before creating posts.',
+                'identity_status' => $user->identity_status,
+            ], 403);
+        }
+
         $data = $request->validated();
         $post = Post::create([
             'user_id' => $request->user_id,
             'porperty_id' => $request->porperty_id,
-            'title' => $request->title,
-            'description' => $request->description,
-            'type' => $request->type,
-            'price' => $request->price,
-            'bedrooms' => $request->bedrooms,
-            'bathrooms' => $request->bathrooms,
-            'total_size' => $request->total_size,
-            'school' => $request->school,
-            'resturant' => $request->resturant,
-            'bus' => $request->bus,
-            'city' => $request->city,
-            'address' => $request->address,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'pet_policy' => $request->pet_policy,
-            'utilities_policy' => $request->utilities_policy,
-            'income_policy' => $request->income_policy,
+            'Title' => $request->title,
+            'Description' => $request->description,
+            'Type' => $request->type,
+            'Price' => $request->price,
+            'Bedrooms' => $request->bedrooms,
+            'Bathrooms' => $request->bathrooms,
+            'Total_Size' => $request->total_size,
+            'School' => $request->school,
+            'Resturant' => $request->resturant,
+            'Bus' => $request->bus,
+            'City' => $request->city,
+            'Address' => $request->address,
+            'Latitude' => $request->latitude,
+            'Longitude' => $request->longitude,
+            'Pet_Policy' => $request->pet_policy,
+            'Utilities_Policy' => $request->utilities_policy,
+            'Income_Policy' => $request->income_policy,
         ]);
 
-        $images = collect($request["images"])->map(function($url) use ($post) {
-            return [
-                "Image_URL" => $url,
-                "post_id" => $post->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-        })->toArray();
-        PostImage::insert($images);
+        if (!empty($request["images"]) && is_array($request["images"])) {
+            $images = collect($request["images"])->map(function($url) use ($post) {
+                return [
+                    "Image_URL" => $url,
+                    "post_id" => $post->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            })->toArray();
+            PostImage::insert($images);
+        }
 
         $post = $post->fresh()->load('postimage');
 
