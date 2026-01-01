@@ -71,7 +71,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(Review::class);
     }
-    public function identityVerifications() : HasMany
+    public function identityVerifications() : hasMany
     {
         return $this->hasMany(IdentityVerification::class);
     }
