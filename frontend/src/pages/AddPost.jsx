@@ -21,6 +21,7 @@ function AddPost() {
   const [searchParams] = useSearchParams();
   const { t, language } = useLanguage();
   const { showToast } = usePopup();
+  const [durationPrices, setDurationPrices] = useState([]);
 
   useEffect(() => {
     // Check if editing
@@ -39,6 +40,13 @@ function AddPost() {
           if (post.images && post.images.length > 0) {
             const imageUrls = post.images.map(img => img.Image_URL || img.image_url || img);
             setAvatarURL(imageUrls);
+          }
+          // Load duration prices if they exist
+          if (post.duration_prices && post.duration_prices.length > 0) {
+            setDurationPrices(post.duration_prices.map(dp => ({
+              duration_type: dp.duration_type,
+              price: dp.price,
+            })));
           }
           setLoading(false);
         })
@@ -83,6 +91,7 @@ function AddPost() {
       resturant: inputs["resturant"] ? parseInt(inputs["resturant"]) : null,
       school: inputs["school"] ? parseInt(inputs["school"]) : null,
       images: avatarURL || [],
+      duration_prices: durationPrices.filter(dp => dp.duration_type && dp.price > 0),
     };
   };
 
@@ -463,6 +472,62 @@ function AddPost() {
                 className="border border-black outline-none py-5 px-3 rounded-md w-[230px]"
               />
             </div>
+            
+            {/* Duration Pricing Section */}
+            <div className="duration-prices-section w-full border-t pt-4 mt-4">
+              <h3 className="font-bold text-lg mb-4">{t("addPost.durationPricing") || "Rental Duration Pricing"}</h3>
+              <p className="text-sm text-gray-600 mb-4">{t("addPost.durationPricingDesc") || "Select which duration types you want to offer and set prices for each:"}</p>
+              
+              {['day', 'week', 'month', 'year'].map((durationType) => {
+                const existing = durationPrices.find(dp => dp.duration_type === durationType);
+                return (
+                  <div key={durationType} className="flex items-center gap-3 mb-3">
+                    <input
+                      type="checkbox"
+                      id={`duration-${durationType}`}
+                      checked={!!existing}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setDurationPrices([...durationPrices, { duration_type: durationType, price: 0 }]);
+                        } else {
+                          setDurationPrices(durationPrices.filter(dp => dp.duration_type !== durationType));
+                        }
+                      }}
+                      className="w-5 h-5"
+                    />
+                    <label htmlFor={`duration-${durationType}`} className="font-semibold capitalize min-w-[80px]">
+                      {t(`addPost.${durationType}`) || durationType}:
+                    </label>
+                    {existing && (
+                      <input
+                        type="number"
+                        placeholder={t("addPost.price") || "Price"}
+                        value={existing.price}
+                        onChange={(e) => {
+                          setDurationPrices(durationPrices.map(dp =>
+                            dp.duration_type === durationType
+                              ? { ...dp, price: parseFloat(e.target.value) || 0 }
+                              : dp
+                          ));
+                        }}
+                        className="border border-black outline-none py-2 px-3 rounded-md w-[150px]"
+                        min="0"
+                        step="0.01"
+                      />
+                    )}
+                  </div>
+                );
+              })}
+              
+              {durationPrices.length > 0 && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-md">
+                  <p className="text-sm text-blue-800">
+                    {t("addPost.durationPricingNote") || "Selected duration types will be available for renters to choose from when booking."}
+                  </p>
+                </div>
+              )}
+            </div>
+            
             <button 
               type="submit"
               className="bg-green-600 h-[86px] text-white font-semibold rounded-md w-[230px] hover:bg-green-800 transition"

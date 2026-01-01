@@ -14,6 +14,8 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $reputation = $this->resource->getReputation();
+        
         return [
             "id" => $this->id,
             "name" => $this->name,
@@ -21,7 +23,11 @@ class UserResource extends JsonResource
             "avatar" => $this->avatar,
             "role" => $this->role ?? 'user',
             "status" => $this->status ?? 'active',
-            "identity_status" => $this->identity_status ?? 'none'
+            "identity_status" => $this->identity_status ?? 'none',
+            "reputation" => [
+                "average_rating" => $reputation['average_rating'],
+                "total_reviews" => $reputation['total_reviews'],
+            ],
         ];
     }
 }

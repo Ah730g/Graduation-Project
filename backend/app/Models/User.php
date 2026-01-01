@@ -70,7 +70,36 @@ class User extends Authenticatable
     }
     public function reviews() : HasMany
     {
-        return $this->hasMany(Review::class);
+        return $this->hasMany(Review::class, 'user_id'); // Legacy
+    }
+
+    public function ratingsGiven() : HasMany
+    {
+        return $this->hasMany(Review::class, 'rater_user_id');
+    }
+
+    public function ratingsReceived() : HasMany
+    {
+        return $this->hasMany(Review::class, 'rated_user_id');
+    }
+
+    /**
+     * Get user's reputation (average rating and total count)
+     * Only counts revealed reviews
+     */
+    public function getReputation(): array
+    {
+        $revealedReviews = $this->ratingsReceived()
+            ->where('status', 'revealed')
+            ->get();
+
+        $averageRating = $revealedReviews->avg('rating') ?? 0;
+        $totalReviews = $revealedReviews->count();
+
+        return [
+            'average_rating' => round($averageRating, 2),
+            'total_reviews' => $totalReviews,
+        ];
     }
     public function identityVerifications() : hasMany
     {

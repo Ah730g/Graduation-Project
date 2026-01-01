@@ -105,49 +105,128 @@ class PaymentController extends Controller
             'payment_details' => $request->payment_details ?? [],
         ]);
 
+        // Get rental request with dates and duration type
+        $rentalRequest = RentalRequest::with(['post'])->findOrFail($payment->rental_request_id);
+        
+        // Use dates from rental request, or calculate from duration if not set
+        $startDate = $rentalRequest->requested_start_date ?? now()->addDays(7);
+        $endDate = $rentalRequest->requested_end_date ?? now()->addMonths(12);
+        
+        // Double-check for overlaps (in case dates changed between request and payment)
+        if (\App\Services\RentalDurationService::hasOverlap($payment->post_id, $startDate, $endDate)) {
+            // Recalculate dates if overlap detected
+            $startDate = \App\Services\RentalDurationService::getNextAvailableStartDate($payment->post_id);
+            if ($rentalRequest->duration_type && $rentalRequest->duration_multiplier) {
+                $endDate = \App\Services\RentalDurationService::calculateEndDate(
+                    $startDate,
+                    $rentalRequest->duration_type,
+                    $rentalRequest->duration_multiplier
+                );
+            } else {
+                $endDate = $startDate->copy()->addMonths(12);
+            }
+        }
+        
+        // Check if this is a test duration rental (for testing rating system)
+        $isTestDuration = in_array($rentalRequest->duration_type, ['test_10s', 'test_30s']);
+        
+        // For test durations, set contract to expire immediately after creation
+        if ($isTestDuration) {
+            // Set both dates to past to indicate contract has already completed
+            // This allows immediate testing of the rating system
+            $startDate = now()->subDays(2);
+            $endDate = now()->subDay();
+            // Set status to expired immediately
+            $contractStatus = 'expired';
+        } else {
+            // Normal flow: pending status waiting for owner confirmation
+            $contractStatus = 'pending';
+        }
+        
         // Create contract with status pending (waiting for owner to confirm payment receipt)
+        // OR expired immediately for test durations
         $contract = Contract::create([
             'rental_request_id' => $payment->rental_request_id,
             'payment_id' => $payment->id,
             'user_id' => $payment->user_id,
             'post_id' => $payment->post_id,
-            'start_date' => now()->addDays(7), // Default: 7 days from now
-            'end_date' => now()->addMonths(12), // Default: 1 year
+            'start_date' => $startDate,
+            'end_date' => $endDate,
             'monthly_rent' => $payment->amount,
-            'status' => 'pending', // Waiting for owner to confirm payment receipt
+            'status' => $contractStatus,
             'terms' => $this->generateContractTerms($payment->post),
         ]);
-
-        // Update rental request status to payment_received (تم الاستلام)
-        if ($payment->rentalRequest) {
-            $payment->rentalRequest->update(['status' => 'payment_received']);
+        
+        // For test durations, also mark the post as available again immediately
+        if ($isTestDuration && $contract->post && $contract->post->status === 'rented') {
+            $contract->post->update(['status' => 'active']);
         }
 
-        // Notify apartment owner to confirm payment receipt
-        Notification::create([
-            'user_id' => $payment->post->user_id,
-            'type' => 'payment_received',
-            'title' => 'Payment Received - Confirm Receipt',
-            'message' => "Payment of {$payment->amount} has been received for {$payment->post->Title}. Please confirm receipt of payment to proceed with contract signing.",
-            'data' => [
-                'payment_id' => $payment->id,
-                'contract_id' => $contract->id,
-                'post_id' => $payment->post_id,
-            ],
-        ]);
+        // Update rental request status
+        if ($payment->rentalRequest) {
+            // For test durations, mark as contract_signed since it expires immediately
+            // For normal durations, mark as payment_received
+            $rentalStatus = $isTestDuration ? 'contract_signed' : 'payment_received';
+            $payment->rentalRequest->update(['status' => $rentalStatus]);
+        }
+
+        // Notify apartment owner
+        if ($isTestDuration) {
+            // For test durations, notify that contract is ready for rating
+            Notification::create([
+                'user_id' => $payment->post->user_id,
+                'type' => 'contract_expired',
+                'title' => 'Contract Completed - Rate Your Experience',
+                'message' => "The test rental contract for {$payment->post->Title} has been completed. You can now rate the renter.",
+                'data' => [
+                    'payment_id' => $payment->id,
+                    'contract_id' => $contract->id,
+                    'post_id' => $payment->post_id,
+                ],
+            ]);
+        } else {
+            // For normal durations, notify to confirm payment receipt
+            Notification::create([
+                'user_id' => $payment->post->user_id,
+                'type' => 'payment_received',
+                'title' => 'Payment Received - Confirm Receipt',
+                'message' => "Payment of {$payment->amount} has been received for {$payment->post->Title}. Please confirm receipt of payment to proceed with contract signing.",
+                'data' => [
+                    'payment_id' => $payment->id,
+                    'contract_id' => $contract->id,
+                    'post_id' => $payment->post_id,
+                ],
+            ]);
+        }
 
         // Notify renter
-        Notification::create([
-            'user_id' => $payment->user_id,
-            'type' => 'payment_confirmed',
-            'title' => 'Payment Confirmed',
-            'message' => "Your payment has been confirmed. Please review and sign the contract.",
-            'data' => [
-                'payment_id' => $payment->id,
-                'contract_id' => $contract->id,
-                'post_id' => $payment->post_id,
-            ],
-        ]);
+        if ($isTestDuration) {
+            // For test durations, notify that contract is ready for rating
+            Notification::create([
+                'user_id' => $payment->user_id,
+                'type' => 'contract_expired',
+                'title' => 'Contract Completed - Rate Your Experience',
+                'message' => "Your test rental contract for {$payment->post->Title} has been completed. You can now rate the owner.",
+                'data' => [
+                    'payment_id' => $payment->id,
+                    'contract_id' => $contract->id,
+                    'post_id' => $payment->post_id,
+                ],
+            ]);
+        } else {
+            // For normal durations, notify that payment is confirmed
+            Notification::create([
+                'user_id' => $payment->user_id,
+                'type' => 'payment_confirmed',
+                'title' => 'Payment Confirmed',
+                'message' => "Your payment has been confirmed. Please review and sign the contract.",
+                'data' => [
+                    'payment_id' => $payment->id,
+                    'contract_id' => $contract->id,
+                    'post_id' => $payment->post_id,
+                ],
+            ]);
+        }
 
         return response()->json([
             'message' => 'Payment confirmed and contract created',

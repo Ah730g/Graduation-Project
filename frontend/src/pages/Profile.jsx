@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Chat from '../components/Chat';
 import { useUserContext } from '../contexts/UserContext';
@@ -9,6 +9,23 @@ import { useLanguage } from '../contexts/LanguageContext';
 function Profile() {
   const { user, setUser, setToken, message } = useUserContext();
   const { t, language } = useLanguage();
+  const [reputation, setReputation] = useState(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchReputation();
+    }
+  }, [user]);
+
+  const fetchReputation = () => {
+    AxiosClient.get(`/users/${user.id}/reputation`)
+      .then((response) => {
+        setReputation(response.data);
+      })
+      .catch((error) => {
+        console.error('Error fetching reputation:', error);
+      });
+  };
 
   const onLogout = () => {
     AxiosClient.post('/logout').then(() => {
@@ -52,6 +69,42 @@ function Profile() {
               <span className="dark:text-gray-200">
                 {t('profile.email')} : <b className="dark:text-white">{user.email}</b>
               </span>
+
+              {/* Reputation Display */}
+              {(reputation || user.reputation) && (
+                <div className="border border-gray-300 dark:border-gray-700 rounded-md p-4 bg-gray-50 dark:bg-gray-800">
+                  <h4 className="font-semibold dark:text-white mb-3">
+                    {t('rating.reputation') || 'Reputation'}
+                  </h4>
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                      <span className="text-3xl">⭐</span>
+                      <div>
+                        <p className="text-2xl font-bold text-[#444] dark:text-white">
+                          {(reputation?.average_rating || user.reputation?.average_rating || 0).toFixed(1)}
+                        </p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {t('rating.averageRating') || 'Average Rating'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="h-12 w-px bg-gray-300 dark:bg-gray-600"></div>
+                    <div>
+                      <p className="text-2xl font-bold text-[#444] dark:text-white">
+                        {reputation?.total_reviews || user.reputation?.total_reviews || 0}
+                      </p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        {t('rating.totalReviews') || 'Total Reviews'}
+                      </p>
+                    </div>
+                  </div>
+                  {(reputation?.total_reviews || user.reputation?.total_reviews || 0) === 0 && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+                      {t('rating.noReviewsYet') || 'No reviews yet'}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Identity Verification Status */}
               <div className="border border-gray-300 dark:border-gray-700 rounded-md p-4 bg-gray-50 dark:bg-gray-800">

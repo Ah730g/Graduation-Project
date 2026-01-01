@@ -14,10 +14,16 @@ class RentalRequest extends Model
         'message',
         'requested_at',
         'hidden_by_user_id',
+        'duration_type',
+        'duration_multiplier',
+        'requested_start_date',
+        'requested_end_date',
     ];
 
     protected $casts = [
         'requested_at' => 'datetime',
+        'requested_start_date' => 'date',
+        'requested_end_date' => 'date',
     ];
 
     public function user(): BelongsTo

@@ -36,7 +36,15 @@ class PostResource extends JsonResource
             "bus" => $this->Bus,
             "resturant" => $this->Resturant,
             "school" => $this->School,
-            "images" => $this->postimage
+            "images" => $this->postimage,
+            "duration_prices" => $this->whenLoaded('durationPrices', function() {
+                return $this->durationPrices->map(function($dp) {
+                    return [
+                        'duration_type' => $dp->duration_type,
+                        'price' => $dp->price,
+                    ];
+                });
+            })
         ];
     }
 }

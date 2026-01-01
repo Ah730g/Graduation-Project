@@ -26,6 +26,7 @@ import BookingRequests from "./pages/BookingRequests";
 import Notifications from "./pages/Notifications";
 import Payment from "./pages/Payment";
 import ContractSigning from "./pages/ContractSigning";
+import Ratings from "./pages/Ratings";
 import EstateInfoLoader from "./Lib/Loaders";
 
 const route = createBrowserRouter([
@@ -105,6 +106,10 @@ const route = createBrowserRouter([
       {
         path: "/contracts/:id",
         element: <ContractSigning />,
+      },
+      {
+        path: "/ratings",
+        element: <Ratings />,
       },
     ],
   },

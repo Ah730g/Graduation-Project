@@ -56,4 +56,36 @@ class Contract extends Model
     {
         return $this->belongsTo(Payment::class);
     }
+
+    public function reviews(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    /**
+     * Check if stay is completed (contract expired)
+     */
+    public function isStayCompleted(): bool
+    {
+        return $this->status === 'expired';
+    }
+
+    /**
+     * Get the owner user for this contract
+     */
+    public function getOwnerUser()
+    {
+        return $this->post ? $this->post->user : null;
+    }
+
+    /**
+     * Get the renter user for this contract
+     */
+    public function getRenterUser()
+    {
+        if ($this->rentalRequest && $this->rentalRequest->user) {
+            return $this->rentalRequest->user;
+        }
+        return $this->user;
+    }
 }

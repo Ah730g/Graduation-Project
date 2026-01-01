@@ -18,6 +18,8 @@ Route::post("/login",[AuthController::class, "login"]);
 Route::get("/user-posts/{id}",[userController::class,"getUserPosts"]);
 Route::get("/property",[PropertyController::class,"index"]);
 Route::get("/is-post-saved",[SavedPostController::class,"isPostSaved"]);
+// Public reputation endpoint (no auth required)
+Route::get("/users/{userId}/reputation",[App\Http\Controllers\ReviewController::class,"getReputation"]);
 
 Route::middleware("auth:sanctum")->group(function () {
 
@@ -64,6 +66,15 @@ Route::middleware("auth:sanctum")->group(function () {
         Route::post("/notifications/read-all",[App\Http\Controllers\NotificationController::class,"markAllAsRead"]);
         Route::delete("/notifications/{id}",[App\Http\Controllers\NotificationController::class,"destroy"]);
         Route::delete("/notifications",[App\Http\Controllers\NotificationController::class,"deleteAll"]);
+        
+        // Reviews/Ratings (two-sided rating system)
+        Route::get("/reviews/eligible-contracts",[App\Http\Controllers\ReviewController::class,"getEligibleContracts"]);
+        Route::post("/reviews",[App\Http\Controllers\ReviewController::class,"store"]);
+        Route::get("/reviews/contract/{contractId}",[App\Http\Controllers\ReviewController::class,"getContractReviews"]);
+        Route::get("/reviews/user/{userId}",[App\Http\Controllers\ReviewController::class,"index"]);
+        Route::get("/reviews",[App\Http\Controllers\ReviewController::class,"index"]);
+        Route::put("/reviews/{id}",[App\Http\Controllers\ReviewController::class,"update"]);
+        Route::delete("/reviews/{id}",[App\Http\Controllers\ReviewController::class,"destroy"]);
 
 }
 );

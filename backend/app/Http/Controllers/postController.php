@@ -9,6 +9,7 @@ use App\Http\Requests\UpdatepostRequest;
 use App\Http\Resources\PostResource;
 use App\Models\PostImage;
 use App\Models\Porperty;
+use App\Models\PostDurationPrice;
 use Illuminate\Http\Request;
 
 class postController extends Controller
@@ -22,7 +23,27 @@ class postController extends Controller
 
         // Exclude draft and rented posts from public listings
         $query->where("status", "!=", "draft")
-              ->where("status", "!=", "rented");
+              ->where("status", "!=", "rented")
+              // Also exclude posts with active/scheduled contracts (exclude expired ones)
+              ->whereDoesntHave('contracts', function($q) {
+                  $q->whereIn('status', ['active', 'signed', 'pending_signing', 'pending'])
+                    ->where('end_date', '>=', now()->format('Y-m-d'))
+                    ->where('status', '!=', 'expired');
+              })
+              // Also exclude posts with approved or in-progress rental requests
+              ->whereDoesntHave('rentalRequests', function($q) {
+                  $q->whereIn('status', [
+                      'approved', 
+                      'awaiting_payment', 
+                      'payment_received', 
+                      'payment_confirmed', 
+                      'contract_signing',
+                      'contract_signed'
+                  ])
+                  ->whereDoesntHave('contract', function($subQ) {
+                      $subQ->where('status', 'cancelled');
+                  });
+              });
 
         if($request->has("location") && !empty($request->location))
             $query->where("City",$request->location);
@@ -42,7 +63,7 @@ class postController extends Controller
         if($request->has("bedroom") && !empty($request->bedroom))
             $query->where("Bedrooms","=",$request->bedroom);
 
-        $posts = $query->get();
+        $posts = $query->with('durationPrices')->get();
         return PostResource::collection($posts);
     }
 
@@ -149,7 +170,24 @@ class postController extends Controller
             PostImage::insert($images);
         }
 
-        $post = $post->fresh()->load('postimage');
+        // Handle duration prices if provided
+        if ($request->has('duration_prices') && is_array($request->duration_prices)) {
+            foreach ($request->duration_prices as $durationPrice) {
+                if (isset($durationPrice['duration_type']) && isset($durationPrice['price'])) {
+                    PostDurationPrice::updateOrCreate(
+                        [
+                            'post_id' => $post->id,
+                            'duration_type' => $durationPrice['duration_type'],
+                        ],
+                        [
+                            'price' => $durationPrice['price'],
+                        ]
+                    );
+                }
+            }
+        }
+
+        $post = $post->fresh()->load(['postimage', 'durationPrices']);
 
         return response(new PostResource($post),201);
     }
@@ -159,7 +197,7 @@ class postController extends Controller
      */
     public function show(post $post)
     {
-        $post = Post::where("id","=",$post->id)->firstOrFail();
+        $post = Post::where("id","=",$post->id)->with('durationPrices')->firstOrFail();
         return response()->json(new PostDetailsResource($post),200);
     }
 
@@ -277,7 +315,31 @@ class postController extends Controller
             }
         }
         
-        $post = $post->fresh()->load('postimage');
+        // Handle duration prices if provided
+        if ($request->has('duration_prices') && is_array($request->duration_prices)) {
+            // Delete existing duration prices not in the new list
+            $newDurationTypes = collect($request->duration_prices)->pluck('duration_type')->toArray();
+            PostDurationPrice::where('post_id', $post->id)
+                ->whereNotIn('duration_type', $newDurationTypes)
+                ->delete();
+            
+            // Update or create duration prices
+            foreach ($request->duration_prices as $durationPrice) {
+                if (isset($durationPrice['duration_type']) && isset($durationPrice['price'])) {
+                    PostDurationPrice::updateOrCreate(
+                        [
+                            'post_id' => $post->id,
+                            'duration_type' => $durationPrice['duration_type'],
+                        ],
+                        [
+                            'price' => $durationPrice['price'],
+                        ]
+                    );
+                }
+            }
+        }
+        
+        $post = $post->fresh()->load(['postimage', 'durationPrices']);
         
         return response(new PostResource($post), 200);
     }

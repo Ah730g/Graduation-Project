@@ -4,6 +4,7 @@ import AxiosClient from '../AxiosClient';
 import { useLanguage } from '../contexts/LanguageContext';
 import { usePopup } from '../contexts/PopupContext';
 import { useUserContext } from '../contexts/UserContext';
+import RatingModal from '../components/RatingModal';
 
 const ContractSigning = () => {
   const { id } = useParams();
@@ -20,10 +21,19 @@ const ContractSigning = () => {
   const [otpCode, setOtpCode] = useState('');
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [contractReviews, setContractReviews] = useState([]);
+  const [userReview, setUserReview] = useState(null);
 
   useEffect(() => {
     fetchContract();
   }, [id]);
+
+  useEffect(() => {
+    if (contract && contract.status === 'expired') {
+      fetchContractReviews();
+    }
+  }, [contract, id]);
 
   const fetchContract = () => {
     setLoading(true);
@@ -37,6 +47,19 @@ const ContractSigning = () => {
         showToast(t('contract.errorLoading') || 'Error loading contract', 'error');
         setLoading(false);
         navigate('/booking-requests');
+      });
+  };
+
+  const fetchContractReviews = () => {
+    AxiosClient.get(`/reviews/contract/${id}`)
+      .then((response) => {
+        setContractReviews(response.data || []);
+        // Find user's review
+        const review = response.data?.find(r => r.rater?.id === user?.id);
+        setUserReview(review || null);
+      })
+      .catch((error) => {
+        console.error('Error fetching reviews:', error);
       });
   };
 
@@ -709,8 +732,99 @@ const ContractSigning = () => {
             </div>
           )}
 
+          {/* Rating Section - Show for expired contracts */}
+          {contract.status === 'expired' && (isOwner || isRenter) && (
+            <div className="border-t pt-6 mt-6">
+              <h2 className="text-xl font-bold text-[#444] mb-4">
+                {t('rating.rateYourExperience') || 'Rate Your Experience'}
+              </h2>
+              
+              {/* Get the other party */}
+              {(() => {
+                const otherParty = isOwner 
+                  ? (contract.rentalRequest?.user || contract.user)
+                  : contract.post?.user;
+                
+                return (
+                  <div className="space-y-4">
+                    {otherParty && (
+                      <div className="p-4 bg-gray-50 rounded-md">
+                        <p className="text-sm text-gray-600 mb-2">
+                          {t('rating.rateUser') || 'Rate'}: {otherParty.name}
+                        </p>
+                        <div className="flex items-center gap-3">
+                          {otherParty.avatar && (
+                            <img
+                              src={otherParty.avatar}
+                              alt={otherParty.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                          )}
+                          <div>
+                            <p className="font-semibold text-[#444]">{otherParty.name}</p>
+                            {otherParty.email && (
+                              <p className="text-sm text-gray-600">{otherParty.email}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* User's Review */}
+                    {userReview ? (
+                      <div className="p-4 bg-blue-50 rounded-md">
+                        <p className="font-semibold text-[#444] mb-2">
+                          {t('rating.yourRating') || 'Your Rating'}
+                          {userReview.status === 'hidden' && (
+                            <span className="ml-2 text-sm font-normal text-gray-600">
+                              ({t('rating.hidden') || 'Hidden - will be revealed when both parties rate or after 14 days'})
+                            </span>
+                          )}
+                        </p>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">⭐</span>
+                          <span className="font-semibold text-lg">
+                            {userReview.rating}/5
+                          </span>
+                        </div>
+                        {userReview.comment && (
+                          <p className="text-[#444] mt-2">{userReview.comment}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowRatingModal(true)}
+                        className="w-full bg-yellow-300 hover:bg-yellow-400 text-[#444] font-semibold py-3 rounded-md transition"
+                      >
+                        {t('rating.rateNow') || 'Rate This Stay'}
+                      </button>
+                    )}
+
+                    {/* Other Party's Review (if revealed) */}
+                    {contractReviews.filter(r => r.rater?.id !== user?.id && r.status === 'revealed').map((review) => (
+                      <div key={review.id} className="p-4 bg-green-50 rounded-md">
+                        <p className="font-semibold text-[#444] mb-2">
+                          {review.rater?.name}'s {t('rating.rating') || 'Rating'}
+                        </p>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">⭐</span>
+                          <span className="font-semibold text-lg">
+                            {review.rating}/5
+                          </span>
+                        </div>
+                        {review.comment && (
+                          <p className="text-[#444] mt-2">{review.comment}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
           {/* Status Messages */}
-          {!canSign && !canConfirmPayment && contract.status !== 'cancelled' && (
+          {!canSign && !canConfirmPayment && contract.status !== 'cancelled' && contract.status !== 'expired' && (
             <div className="border-t pt-6 mt-6">
               <p className="text-center text-[#888]">
                 {contract.status === 'active' 
@@ -731,6 +845,24 @@ const ContractSigning = () => {
           )}
         </div>
       </div>
+
+      {/* Rating Modal */}
+      {showRatingModal && contract && (
+        <RatingModal
+          isOpen={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          contract={contract}
+          otherParty={
+            isOwner 
+              ? (contract.rentalRequest?.user || contract.user)
+              : contract.post?.user
+          }
+          onSuccess={() => {
+            fetchContractReviews();
+            fetchContract();
+          }}
+        />
+      )}
     </div>
   );
 };

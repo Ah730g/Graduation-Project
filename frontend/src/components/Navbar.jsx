@@ -119,6 +119,17 @@ function Navbar() {
           )}
           {user && (
             <Link
+              to="/ratings"
+              className={`hover:scale-105 transition duration-300 ease rounded-md max-md:hidden dark:text-gray-200 ${
+                location.pathname === '/ratings' 
+                  ? 'bg-yellow-300 dark:bg-yellow-400 text-[#444] dark:text-gray-900 px-3 py-1 font-bold rounded-md' : ''
+              }`}
+            >
+              {t('navbar.ratings') || 'Ratings'}
+            </Link>
+          )}
+          {user && (
+            <Link
               to="/notifications"
               className={`hover:scale-105 transition duration-300 ease rounded-md max-md:hidden relative dark:text-gray-200 ${
                 location.pathname === '/notifications' 

@@ -61,4 +61,9 @@ class Post extends Model
     {
         return $this->hasMany(Payment::class);
     }
+    
+    public function durationPrices() : HasMany
+    {
+        return $this->hasMany(PostDurationPrice::class);
+    }
 }
