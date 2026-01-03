@@ -60,9 +60,10 @@ IMAGEKIT_URL_ENDPOINT=your_url_endpoint
 1. اضغط **"New"** → **"GitHub Repo"** (في نفس المشروع)
 2. اختر نفس المستودع: `Ah730g/Graduation-Project`
 3. في **Settings** → **Root Directory**: اكتب `frontend`
-4. في **Settings** → **Build Command**: `npm install && npm run build`
-5. في **Settings** → **Start Command**: اتركه فارغاً (Static Site)
+4. في **Settings** → **Build Command**: اتركه فارغاً (سيستخدم `nixpacks.toml` تلقائياً)
+5. في **Settings** → **Start Command**: اتركه فارغاً أو `echo 'Static site'`
 6. في **Settings** → **Output Directory**: `dist`
+7. **مهم**: تأكد من أن Railway يكتشف `package.json` في مجلد `frontend` (سيحدث تلقائياً إذا كان Root Directory = `frontend`)
 
 ### 6. إعداد متغيرات البيئة للـ Frontend
 
