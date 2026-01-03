@@ -69,7 +69,7 @@ services:
     name: graduation-project-frontend
     rootDir: frontend
     buildCommand: npm install && npm run build
-    startCommand: npx serve -s dist -l $PORT
+    startCommand: npm run preview -- --host 0.0.0.0 --port $PORT
     envVars:
       - key: VITE_BASE_API_URL
         fromService:
