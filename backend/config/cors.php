@@ -26,7 +26,12 @@ return [
         'http://127.0.0.1:3000',
     ],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '/^https:\/\/.*\.onrender\.com$/',
+        '/^https:\/\/.*\.railway\.app$/',
+        '/^https:\/\/.*\.vercel\.app$/',
+        '/^https:\/\/.*\.netlify\.app$/',
+    ],
 
     'allowed_headers' => ['*'],
 
