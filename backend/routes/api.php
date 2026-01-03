@@ -13,7 +13,7 @@ use App\Models\SavedPost;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// Health check endpoint
+// Health check endpoint for Railway
 Route::get("/health", function () {
     return response()->json(['status' => 'ok', 'timestamp' => now()]);
 });

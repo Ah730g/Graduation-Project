@@ -27,10 +27,10 @@ return [
     ],
 
     'allowed_origins_patterns' => [
-        '/^https:\/\/.*\.onrender\.com$/',
         '/^https:\/\/.*\.railway\.app$/',
+        '/^https:\/\/.*\.up\.railway\.app$/',
+        '/^https:\/\/.*\.onrender\.com$/',
         '/^https:\/\/.*\.vercel\.app$/',
-        '/^https:\/\/.*\.netlify\.app$/',
     ],
 
     'allowed_headers' => ['*'],
