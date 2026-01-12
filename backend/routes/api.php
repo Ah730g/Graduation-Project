@@ -15,6 +15,11 @@ use App\Models\SavedPost;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+// Health check endpoint for Railway
+Route::get("/health", function () {
+    return response()->json(['status' => 'ok', 'timestamp' => now()]);
+});
+
 Route::post("/signup",[AuthController::class, "signup"]);
 Route::post("/login",[AuthController::class, "login"]);
 Route::get("/user-posts/{id}",[userController::class,"getUserPosts"]);
