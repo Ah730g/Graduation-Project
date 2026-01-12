@@ -1,12 +1,14 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminSupportController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\IdentityVerificationController;
 use App\Http\Controllers\ImageKitController;
 use App\Http\Controllers\postController;
 use App\Http\Controllers\PropertyController;
 use App\Http\Controllers\SavedPostController;
+use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\userController;
 use App\Http\Resources\UserResource;
 use App\Models\SavedPost;
@@ -75,6 +77,13 @@ Route::middleware("auth:sanctum")->group(function () {
         Route::get("/reviews",[App\Http\Controllers\ReviewController::class,"index"]);
         Route::put("/reviews/{id}",[App\Http\Controllers\ReviewController::class,"update"]);
         Route::delete("/reviews/{id}",[App\Http\Controllers\ReviewController::class,"destroy"]);
+        
+        // Support Tickets
+        Route::get("/support/tickets",[SupportTicketController::class,"index"]);
+        Route::post("/support/tickets",[SupportTicketController::class,"store"]);
+        Route::get("/support/tickets/{id}",[SupportTicketController::class,"show"]);
+        Route::post("/support/tickets/{id}/reply",[SupportTicketController::class,"reply"]);
+        Route::patch("/support/tickets/{id}/close",[SupportTicketController::class,"close"]);
 
 }
 );
@@ -110,5 +119,20 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::post('/identity-verifications/{id}/reject', [IdentityVerificationController::class, 'reject']);
     Route::post('/identity-verifications/{id}/reject-after-approval', [IdentityVerificationController::class, 'rejectAfterApproval']);
     Route::delete('/identity-verifications/{id}', [IdentityVerificationController::class, 'destroy']);
+    // Support Tickets Admin Routes
+    Route::get('/support/tickets', [AdminSupportController::class, 'index']);
+    Route::get('/support/stats', [AdminSupportController::class, 'stats']);
+    Route::get('/support/tickets/{id}', [AdminSupportController::class, 'show']);
+    Route::post('/support/tickets/{id}/assign', [AdminSupportController::class, 'assign']);
+    Route::post('/support/tickets/{id}/reply', [AdminSupportController::class, 'reply']);
+    Route::patch('/support/tickets/{id}/status', [AdminSupportController::class, 'updateStatus']);
+    Route::patch('/support/tickets/{id}/priority', [AdminSupportController::class, 'updatePriority']);
+    // Reports
+    Route::get('/reports/daily', [App\Http\Controllers\ReportController::class, 'daily']);
+    Route::get('/reports/weekly', [App\Http\Controllers\ReportController::class, 'weekly']);
+    Route::get('/reports/monthly', [App\Http\Controllers\ReportController::class, 'monthly']);
+    Route::get('/reports/yearly', [App\Http\Controllers\ReportController::class, 'yearly']);
+    Route::get('/reports/export/pdf', [App\Http\Controllers\ReportController::class, 'exportPdf']);
+    Route::get('/reports/export/csv', [App\Http\Controllers\ReportController::class, 'exportCsv']);
 });
 

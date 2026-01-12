@@ -14,7 +14,14 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $reputation = $this->resource->getReputation();
+        try {
+            $reputation = $this->resource->getReputation();
+        } catch (\Exception $e) {
+            $reputation = [
+                'average_rating' => 0,
+                'total_reviews' => 0,
+            ];
+        }
         
         return [
             "id" => $this->id,
@@ -25,8 +32,8 @@ class UserResource extends JsonResource
             "status" => $this->status ?? 'active',
             "identity_status" => $this->identity_status ?? 'none',
             "reputation" => [
-                "average_rating" => $reputation['average_rating'],
-                "total_reviews" => $reputation['total_reviews'],
+                "average_rating" => $reputation['average_rating'] ?? 0,
+                "total_reviews" => $reputation['total_reviews'] ?? 0,
             ],
         ];
     }

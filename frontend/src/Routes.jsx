@@ -27,6 +27,12 @@ import Notifications from "./pages/Notifications";
 import Payment from "./pages/Payment";
 import ContractSigning from "./pages/ContractSigning";
 import Ratings from "./pages/Ratings";
+import SupportTickets from "./pages/SupportTickets";
+import CreateTicket from "./pages/CreateTicket";
+import TicketDetails from "./pages/TicketDetails";
+import AdminSupportTickets from "./pages/AdminSupportTickets";
+import AdminTicketDetails from "./pages/AdminTicketDetails";
+import AdminReports from "./pages/AdminReports";
 import EstateInfoLoader from "./Lib/Loaders";
 
 const route = createBrowserRouter([
@@ -111,6 +117,18 @@ const route = createBrowserRouter([
         path: "/ratings",
         element: <Ratings />,
       },
+      {
+        path: "/support/tickets",
+        element: <SupportTickets />,
+      },
+      {
+        path: "/support/create",
+        element: <CreateTicket />,
+      },
+      {
+        path: "/support/tickets/:id",
+        element: <TicketDetails />,
+      },
     ],
   },
   {
@@ -152,6 +170,18 @@ const route = createBrowserRouter([
       {
         path: "identity-verifications",
         element: <IdentityVerificationReview />,
+      },
+      {
+        path: "support/tickets",
+        element: <AdminSupportTickets />,
+      },
+      {
+        path: "support/tickets/:id",
+        element: <AdminTicketDetails />,
+      },
+      {
+        path: "reports",
+        element: <AdminReports />,
       },
     ],
   },

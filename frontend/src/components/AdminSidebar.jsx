@@ -30,6 +30,16 @@ function AdminSidebar() {
       labelKey: "admin.notifications",
       icon: "🔔",
     },
+    {
+      path: "/admin/support/tickets",
+      labelKey: "admin.supportTickets",
+      icon: "💬",
+    },
+    {
+      path: "/admin/reports",
+      labelKey: "admin.reportsLabel",
+      icon: "📈",
+    },
     { path: "/admin/settings", labelKey: "admin.settings", icon: "⚙️" },
   ];
 

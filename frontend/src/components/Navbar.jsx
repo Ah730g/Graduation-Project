@@ -8,6 +8,7 @@ import AxiosClient from '../AxiosClient';
 function Navbar() {
   const [sidebar, setSidebar] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
   const { user, isAdmin, setUser, setToken } = useUserContext();
@@ -97,15 +98,27 @@ function Navbar() {
           >
             {t('navbar.home')}
           </Link>
-          <Link
-            href="#"
-            className={`hover:scale-105 transition duration-300 ease rounded-md max-md:hidden dark:text-gray-200 ${
-              location.pathname === '/about' ? 'bg-yellow-300 dark:bg-yellow-400 text-[#444] dark:text-gray-900 px-3 py-1 font-bold rounded-md' : ''
-            }`}
-            to="/about"
-          >
-            {t('navbar.about')}
-          </Link>
+          {!user && (
+            <button
+              onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+              className="bg-yellow-300 dark:bg-yellow-400 hover:scale-105 px-4 py-2 rounded-md font-bold transition duration-300 ease text-[#444] dark:text-gray-900 flex items-center gap-2"
+              title={language === 'en' ? 'Switch to Arabic' : 'التبديل إلى الإنجليزية'}
+            >
+              <span>🌐</span>
+              <span>{language === 'en' ? 'عربي' : 'English'}</span>
+            </button>
+          )}
+          {user && (
+            <Link
+              href="#"
+              className={`hover:scale-105 transition duration-300 ease rounded-md max-md:hidden dark:text-gray-200 ${
+                location.pathname === '/about' ? 'bg-yellow-300 dark:bg-yellow-400 text-[#444] dark:text-gray-900 px-3 py-1 font-bold rounded-md' : ''
+              }`}
+              to="/about"
+            >
+              {t('navbar.about')}
+            </Link>
+          )}
           {user && (
             <Link
               to="/booking-requests"
@@ -130,18 +143,13 @@ function Navbar() {
           )}
           {user && (
             <Link
-              to="/notifications"
-              className={`hover:scale-105 transition duration-300 ease rounded-md max-md:hidden relative dark:text-gray-200 ${
-                location.pathname === '/notifications' 
+              to="/support/tickets"
+              className={`hover:scale-105 transition duration-300 ease rounded-md max-md:hidden dark:text-gray-200 ${
+                location.pathname.startsWith('/support') 
                   ? 'bg-yellow-300 dark:bg-yellow-400 text-[#444] dark:text-gray-900 px-3 py-1 font-bold rounded-md' : ''
               }`}
             >
-              <span className="text-2xl">🔔</span>
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
+              {t('support.tickets') || 'Support'}
             </Link>
           )}
           {user && isAdmin() && (
@@ -161,29 +169,47 @@ function Navbar() {
           ${user ? '' : 'gap-12'}`}
         >
           {user ? (
-            <div className="relative z-[9999]" ref={dropdownRef}>
-              <button
-                onClick={() => setProfileDropdown(!profileDropdown)}
-                className="flex items-center gap-3 hover:scale-105 transition duration-300 ease"
+            <div className="flex items-center gap-2">
+              {/* Notifications Button */}
+              <Link
+                to="/notifications"
+                className={`hover:scale-105 transition duration-300 ease rounded-md max-md:hidden relative dark:text-gray-200 p-2 ${
+                  location.pathname === '/notifications' 
+                    ? 'bg-yellow-300 dark:bg-yellow-400 text-[#444] dark:text-gray-900' : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
               >
-                <img
-                  src={user.avatar || '/avatar.png'}
-                  alt=""
-                  className="w-10 h-10 rounded-full object-cover border-2 border-yellow-300"
-                />
-                <span className="font-bold max-md:hidden dark:text-white">{user.name}</span>
-                <svg
-                  className={`w-4 h-4 transition-transform duration-300 ${profileDropdown ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                <span className="text-2xl">🔔</span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+              
+              {/* Profile Dropdown */}
+              <div className="relative z-[9999]" ref={dropdownRef}>
+                <button
+                  onClick={() => setProfileDropdown(!profileDropdown)}
+                  className="flex items-center gap-2 hover:scale-105 transition duration-300 ease rounded-md p-1 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
+                  <img
+                    src={user.avatar || '/avatar.png'}
+                    alt=""
+                    className="w-10 h-10 rounded-full object-cover border-2 border-yellow-300 dark:border-yellow-400"
+                  />
+                  <span className="font-bold max-md:hidden dark:text-white text-sm">{user.name}</span>
+                  <svg
+                    className={`w-4 h-4 transition-transform duration-300 dark:text-gray-200 ${profileDropdown ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
               
               {profileDropdown && (
-                <div className={`absolute top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-xl border border-gray-200 dark:border-gray-700 z-[10000] ${
+                <div className={`absolute top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-[10000] overflow-hidden ${
                   language === 'ar' ? 'left-0' : 'right-0'
                 }`}>
                   <div className="py-1">
@@ -196,6 +222,62 @@ function Navbar() {
                     >
                       {t('navbar.profile')}
                     </Link>
+                    
+                    {/* Settings Section */}
+                    <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                    <button
+                      onClick={() => setSettingsOpen(!settingsOpen)}
+                      className={`block w-full px-4 py-2 text-sm text-[#444] dark:text-gray-200 hover:bg-yellow-300 dark:hover:bg-yellow-600 transition duration-300 ease ${
+                        language === 'ar' ? 'text-right' : 'text-left'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{t('navbar.settings') || 'Settings'}</span>
+                        <svg
+                          className={`w-4 h-4 transition-transform duration-300 ${settingsOpen ? 'rotate-180' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </button>
+                    
+                    {/* Settings Submenu */}
+                    {settingsOpen && (
+                      <div className="bg-gray-50 dark:bg-gray-900/50 pl-4 border-l-2 border-yellow-300 dark:border-yellow-400">
+                        {/* Dark Mode Toggle */}
+                        <button
+                          onClick={toggleDarkMode}
+                          className={`block w-full px-4 py-2 text-sm text-[#444] dark:text-gray-200 hover:bg-yellow-300 dark:hover:bg-yellow-600 transition duration-300 ease ${
+                            language === 'ar' ? 'text-right' : 'text-left'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{t('navbar.darkMode') || 'Dark Mode'}</span>
+                            <span className="text-lg">{darkMode ? '☀️' : '🌙'}</span>
+                          </div>
+                        </button>
+                        
+                        {/* Language Toggle */}
+                        <button
+                          onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+                          className={`block w-full px-4 py-2 text-sm text-[#444] dark:text-gray-200 hover:bg-yellow-300 dark:hover:bg-yellow-600 transition duration-300 ease ${
+                            language === 'ar' ? 'text-right' : 'text-left'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{t('navbar.language') || 'Language'}</span>
+                            <span className="font-semibold">{language === 'en' ? 'عربي' : 'English'}</span>
+                          </div>
+                        </button>
+                      </div>
+                    )}
+                    
+                    <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                    
+                    {/* Logout */}
                     <button
                       onClick={handleLogout}
                       className={`block w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900 transition duration-300 ease ${
@@ -207,6 +289,7 @@ function Navbar() {
                   </div>
                 </div>
               )}
+              </div>
             </div>
           ) : (
             <>
@@ -228,28 +311,6 @@ function Navbar() {
               </Link>
             </>
           )}
-
-          {/* Dark Mode Toggle Button */}
-          <button
-            onClick={toggleDarkMode}
-            className={`bg-gray-700 dark:bg-yellow-300 hover:scale-105 px-4 py-2 rounded-md font-bold transition duration-300 ease text-white dark:text-[#444] ${
-              language === 'ar' ? 'max-md:ml-2' : 'max-md:mr-2'
-            }`}
-            title={darkMode ? (language === 'en' ? 'Switch to Light Mode' : 'التبديل إلى الوضع الفاتح') : (language === 'en' ? 'Switch to Dark Mode' : 'التبديل إلى الوضع الداكن')}
-          >
-            {darkMode ? '☀️' : '🌙'}
-          </button>
-
-          {/* Language Toggle Button */}
-          <button
-            onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
-            className={`bg-yellow-300 dark:bg-yellow-400 hover:scale-105 px-4 py-2 rounded-md font-bold transition duration-300 ease text-[#444] dark:text-gray-900 ${
-              language === 'ar' ? 'max-md:ml-2' : 'max-md:mr-2'
-            }`}
-            title={language === 'en' ? 'Switch to Arabic' : 'التبديل إلى الإنجليزية'}
-          >
-            {language === 'en' ? 'عربي' : 'English'}
-          </button>
 
           <a href="#">
             <img
@@ -280,9 +341,23 @@ function Navbar() {
           <a href="" className="text-white">
             {t('navbar.home')}
           </a>
-          <a href="" className="text-white">
-            {t('navbar.about')}
-          </a>
+          {!user && (
+            <button
+              onClick={() => {
+                setLanguage(language === 'en' ? 'ar' : 'en');
+                setSidebar(false);
+              }}
+              className="text-white flex items-center gap-2"
+            >
+              <span>🌐</span>
+              <span>{language === 'en' ? 'عربي' : 'English'}</span>
+            </button>
+          )}
+          {user && (
+            <a href="" className="text-white">
+              {t('navbar.about')}
+            </a>
+          )}
           <a href="" className="text-white">
             {t('navbar.contact')}
           </a>

@@ -89,17 +89,25 @@ class User extends Authenticatable
      */
     public function getReputation(): array
     {
-        $revealedReviews = $this->ratingsReceived()
-            ->where('status', 'revealed')
-            ->get();
+        try {
+            $revealedReviews = $this->ratingsReceived()
+                ->where('status', 'revealed')
+                ->get();
 
-        $averageRating = $revealedReviews->avg('rating') ?? 0;
-        $totalReviews = $revealedReviews->count();
+            $averageRating = $revealedReviews->avg('rating') ?? 0;
+            $totalReviews = $revealedReviews->count();
 
-        return [
-            'average_rating' => round($averageRating, 2),
-            'total_reviews' => $totalReviews,
-        ];
+            return [
+                'average_rating' => round((float)$averageRating, 2),
+                'total_reviews' => (int)$totalReviews,
+            ];
+        } catch (\Exception $e) {
+            // Return default values if there's an error
+            return [
+                'average_rating' => 0,
+                'total_reviews' => 0,
+            ];
+        }
     }
     public function identityVerifications() : hasMany
     {
@@ -114,5 +122,20 @@ class User extends Authenticatable
     public function notifications() : HasMany
     {
         return $this->hasMany(Notification::class);
+    }
+    
+    public function supportTickets() : HasMany
+    {
+        return $this->hasMany(SupportTicket::class, 'user_id');
+    }
+    
+    public function assignedTickets() : HasMany
+    {
+        return $this->hasMany(SupportTicket::class, 'admin_id');
+    }
+    
+    public function supportMessages() : HasMany
+    {
+        return $this->hasMany(SupportMessage::class, 'sender_id');
     }
 }

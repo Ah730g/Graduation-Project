@@ -28,16 +28,21 @@ class AuthController extends Controller
     }
     public function login(LoginRequest $request)
     {
-        $data = $request->validated();
-        $user = User::where("email",$data["email"])->first();
-        if(!$user)
-            return response(['message' => "User Not Found"],404);
-        if(!Hash::check($data["password"],$user->password))
-            return response(["message" => "password is not correct"],404);
-        auth()->login($user);
-        $userDTO = new UserResource($user);
-        $token = $user->createToken("user_token")->plainTextToken;
-        return response(compact("userDTO","token"),200);
+        try {
+            $data = $request->validated();
+            $user = User::where("email",$data["email"])->first();
+            if(!$user)
+                return response(['message' => "User Not Found"],404);
+            if(!Hash::check($data["password"],$user->password))
+                return response(["message" => "password is not correct"],404);
+            auth()->login($user);
+            $userDTO = new UserResource($user);
+            $token = $user->createToken("user_token")->plainTextToken;
+            return response(compact("userDTO","token"),200);
+        } catch (\Exception $e) {
+            \Log::error('Login error: ' . $e->getMessage());
+            return response(['message' => 'An error occurred during login', 'error' => $e->getMessage()], 500);
+        }
     }
     public function Logout(Request $request)
     {

@@ -26,13 +26,21 @@ function Login() {
         setLoading(false);
       })
       .catch((error) => {
-        const response = error.response;
         setLoading(false);
-        if (response.status == 404) {
-          setErrors({ message: [response.data.message] });
-        }
-        if (response.status == 422) {
-          setErrors(response.data.errors);
+        const response = error.response;
+        if (response) {
+          if (response.status === 404) {
+            setErrors({ message: [response.data?.message || 'User not found'] });
+          } else if (response.status === 422) {
+            setErrors(response.data?.errors || { message: ['Validation error'] });
+          } else if (response.status === 500) {
+            setErrors({ message: [response.data?.message || 'Server error. Please try again.'] });
+          } else {
+            setErrors({ message: [response.data?.message || 'An error occurred'] });
+          }
+        } else {
+          // Network error or no response
+          setErrors({ message: ['Network error. Please check your connection.'] });
         }
       });
   };
